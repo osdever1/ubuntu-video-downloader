@@ -1,5 +1,8 @@
 #!/bin/bash
-
+bold=$(tput bold)
+normal=$(tput sgr0)
+isTrue=0
+touch file.json
 echo "Checking for prerequisites"
 
 if ! command -v yt-dlp &> /dev/null; then
@@ -7,7 +10,7 @@ if ! command -v yt-dlp &> /dev/null; then
 	read yorn
 
 	if [ "$yorn" = "y" ]; then
-		sudo add-apt-repository ppa:tomtomtom/yt-dlp && sudo apt update && sudo apt install yt-dlp || brew install yt-dlp && brew upgrade yt-dlp || sudo port install yt-dlp || doas apk -U add yt-dlp || sudo pacman -Syu yt-dlp || scoop install yt-dlp && scoop update yt-dlp || choco install yt-dlp && choco upgrade yt-dlp || winget install yt-dlp && winget upgrade yt-dlp 
+		sudo add-apt-repository ppa:tomtomtom/yt-dlp && sudo apt install yt-dlp 
 		clear
 		printf "Checking if yt-dlp is installed\n\n"
 		if command -v yt-dlp &> /dev/null; then
@@ -26,19 +29,35 @@ printf "Destination folder, /home/USER/youtube-media\ny/n\n\n"
 read yorn
 
 if [ "$yorn" == "y" ]; then
+	var1=$(jq -r '.username' file.json)
+	if [[ -n $var1 ]]; then
+		isTrue=1
+		printf "Enter username, or select from list\n\n"
+		printf "${bold}1. %s\n\n${normal}" "$var1"
+	else
 	printf "Enter username of this computer\n\n"
+	fi
+	
 	read username
 	two=1
-	if ! test -d /home/$username; then
-		echo "$username is an invalid username, exiting program"
-		sleep 3
-		exit
-	elif ! test -d /home/$username/youtube-media; then
-		mkdir /home/$username/youtube-media
-		echo "Folder /home/$username/youtube-media has been created"
-	fi
+	if [ $isTrue = 1 ]; then
+	 	if [ $isTrue = 1 ]; then
+			username=$var1
+			printf "${bold}%s${normal} is selected\n\n" "$username"
+		
+		fi
+	else	
+		if ! test -d /home/$username; then
+			echo "$username is an invalid username, exiting program"
+			sleep 3
+			exit
+		elif ! test -d /home/$username/youtube-media; then
+			mkdir /home/$username/youtube-media
+			echo "Folder /home/$username/youtube-media has been created"
+			path1="/home/$username/youtube-media"
+		fi
 	echo "Folder /home/$username/youtube-media exists, using."
-
+	fi
 else [ "$yorn" == "n" ]
 	printf "Give destination folder location\n\n"
 	read destination
@@ -57,6 +76,8 @@ else [ "$yorn" == "n" ]
 	echo "Folder $destination has been created"
 fi
 
+#youtube video creation -------------------------------------------------------
+
 echo "Insert Youtube URL:"
 read url
 
@@ -69,3 +90,25 @@ if [ $two -eq 1 ]; then
 elif [ $two -eq 2 ]; then
 	yt-dlp -S res,ext:$mp3ormp4:m4a --recode $mp3ormp4 $url -P $destination
 fi
+
+#CACHING SECTION -----------------------------------------------
+
+JSON=$(jq -n '')
+
+if [[ -n "$username" ]]; then
+	test=$(jq -r '.username' file.json)
+	echo $test
+	if [[ $test = $username ]]; then
+		echo "DUPLICATE"
+	elif [[ $test != $username ]]; then
+		JSON=$(echo $JSON | jq --arg username "${username}" '. += $ARGS.named')
+		echo "$JSON" >> file.json
+	fi
+fi
+
+#if [[ -n "$destination" ]]; then
+#  	JSON=$(echo $JSON | jq --arg path "${destination}" '. += $ARGS.named')
+#fi
+
+
+#echo "$JSON" >> file.json
